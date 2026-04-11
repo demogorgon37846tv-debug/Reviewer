@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>MAED Educational Management · Comprehensive Reviewer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+    }
+    body {
+      display: flex;
+      height: 100vh;
+      background: #f5f7fc;
+      margin: 0;
+      overflow: hidden;
+    }
+    /* ---------- SIDEBAR (collapsible) ---------- */
+    .sidebar {
+      width: 280px;
+      background: #1e2b3c;
+      color: #e0e7ff;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 2px 0 12px rgba(0,0,0,0.06);
+      transition: margin-left 0.25s ease;
+      height: 100vh;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+    .sidebar.collapsed {
+      margin-left: -280px;
+    }
+    .sidebar-header {
+      padding: 20px 16px;
+      border-bottom: 1px solid #33475b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .sidebar-header h3 {
+      font-weight: 500;
+      font-size: 1.1rem;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+    .toggle-sidebar-btn {
+      background: none;
+      border: 1px solid #4a627a;
+      color: #ccd9f0;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: 0.2s;
+    }
+    .toggle-sidebar-btn:hover {
+      background: #2e4258;
+      color: white;
+    }
+    .subject-list {
+      list-style: none;
+      padding: 8px 0;
+      margin: 0;
+    }
+    .subject-item {
+      padding: 12px 20px;
+      border-bottom: 1px solid #2a3a4a;
+      cursor: pointer;
+      font-weight: 500;
+      color: #cbd5e8;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .subject-item i {
+      font-style: normal;
+      font-size: 1.1rem;
+    }
+    .subject-item:hover {
+      background: #2e4258;
+      color: white;
+    }
+    .subject-item.active {
+      background: #3f5b74;
+      color: white;
+      border-left: 5px solid #7aa9d4;
+    }
+    /* ---------- MAIN PANEL ---------- */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      background: #f8faff;
+      padding: 0 24px 24px 24px;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      padding: 16px 0 8px;
+      gap: 16px;
+      border-bottom: 1px solid #d9e1ec;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .mobile-menu-btn {
+      display: none;
+      background: #1e2b3c;
+      color: white;
+      border: none;
+      font-size: 22px;
+      padding: 6px 14px;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+    }
+    .subject-title {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #1a2e40;
+      margin: 0;
+    }
+    .quiz-container {
+      max-width: 1000px;
+      margin: 0 0 30px;
+    }
+    .question-card {
+      background: white;
+      border-radius: 20px;
+      padding: 22px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.02);
+      border: 1px solid #e6edf4;
+    }
+    .q-text {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      color: #1f3a4e;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 6px 0;
+    }
+    .option input {
+      accent-color: #1e6f9c;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    .option label {
+      font-size: 1rem;
+      color: #2c4053;
+      cursor: pointer;
+    }
+    .correct-highlight {
+      border-left: 6px solid #2b8c5e;
+      background: #f0f9f0;
+    }
+    .wrong-highlight {
+      border-left: 6px solid #c23b3b;
+      background: #fef5f5;
+    }
+    .feedback-icon {
+      margin-left: 12px;
+      font-weight: 600;
+    }
+    .submit-area {
+      margin-top: 20px;
+      margin-bottom: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 25px;
+    }
+    .submit-btn {
+      background: #1e3b5c;
+      color: white;
+      border: none;
+      font-size: 1.2rem;
+      font-weight: 600;
+      padding: 14px 36px;
+      border-radius: 60px;
+      cursor: pointer;
+      box-shadow: 0 6px 12px rgba(0,20,40,0.15);
+      transition: 0.2s;
+      border: 1px solid #2f5170;
+    }
+    .submit-btn:hover {
+      background: #143048;
+      transform: scale(1.01);
+    }
+    .score-panel {
+      background: white;
+      padding: 14px 28px;
+      border-radius: 48px;
+      font-weight: 600;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+      border: 1px solid #d0ddee;
+      color: #1f3a4e;
+      font-size: 1.2rem;
+    }
+    .reset-btn {
+      background: #f1f5f9;
+      border: 1px solid #bacddc;
+      padding: 10px 24px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #1e3b5c;
+    }
+
+    /* mobile adaptation */
+    @media (max-width: 720px) {
+      body {
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100%;
+        z-index: 1000;
+        width: 260px;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.2);
+      }
+      .sidebar.collapsed {
+        margin-left: -260px;
+      }
+      .mobile-menu-btn {
+        display: inline-block;
+      }
+      .main {
+        padding: 0 16px 16px;
+        width: 100%;
+        overflow-y: auto;
+      }
+      .top-bar {
+        padding-top: 12px;
+      }
+      .subject-title {
+        font-size: 1.5rem;
+      }
+      .question-card {
+        padding: 18px 16px;
+      }
+    }
+
+    .progress-badge {
+      font-size: 0.9rem;
+      background: #e1e9f2;
+      padding: 2px 12px;
+      border-radius: 30px;
+      color: #1e3b5c;
+    }
+    .footer-note {
+      margin-top: 8px;
+      color: #4a627a;
+    }
+  </style>
+</head>
+<body>
+  <!-- COLLAPSIBLE SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h3>📘 MAED Subjects</h3>
+      <button class="toggle-sidebar-btn" id="sidebarToggleBtn" title="Hide sidebar">✕</button>
+    </div>
+    <ul class="subject-list" id="subjectList"></ul>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+    <div class="top-bar">
+      <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+      <h2 class="subject-title" id="currentSubjectTitle">Research Methodology</h2>
+      <span class="progress-badge" id="questionCountDisplay"></span>
+    </div>
+    <div id="quizContainer" class="quiz-container"></div>
+    <div class="submit-area">
+      <button class="submit-btn" id="submitAllBtn">✅ SUBMIT ALL ANSWERS</button>
+      <button class="reset-btn" id="resetAnswersBtn">↻ Clear my answers</button>
+      <div class="score-panel" id="scorePanel">Score: — / — (—%)</div>
+    </div>
+    <div class="footer-note">⚡ Select answers, then click SUBMIT to see results.</div>
+  </div>
+
+  <script>
+    (function(){
+      'use strict';
+
+      // ---------- DATA EXTRACTION (structured from document) ----------
+      // Subjects with questions array. Each question: { text, options:['A. ...','B. ...', ...], answerIndex (0-based), subject }
+      const subjects = [
+        { id: 'research', name: '📊 Research Methodology', questions: [] },
+        { id: 'stats', name: '📈 Statistics (t-test)', questions: [] },
+        { id: 'found1', name: '🧠 Foundations of Ed (Part 1)', questions: [] },
+        { id: 'found2', name: '📚 Foundations of Ed (Part 2)', questions: [] },
+        { id: 'ed242', name: '💻 Ed 242 - IT in Education', questions: [] },
+        { id: 'ed229', name: '🏫 Educ 229 - Mgmt Principles', questions: [] },
+        { id: 'ed230', name: '📋 Educ 230 - Planning', questions: [] },
+        { id: 'ed233', name: '🌟 Ed 233 - Educational Leadership', questions: [] },
+        { id: 'ed234', name: '🤝 Educ 234 - Mgmt Behavior', questions: [] },
+        { id: 'ed238', name: '👥 Educ 238 - Personnel Mgmt', questions: [] },
+        { id: 'cognate210', name: '🌏 Cognate 210 - Comparative Ed', questions: [] },
+        { id: 'ed239', name: '📐 Ed 239 - School Admin & Sup', questions: [] },
+        { id: 'ed240', name: '💰 Educ 240 - Fiscal Management', questions: [] }
+      ];
+
+      // Helper to find subject index
+      const subjectMap = Object.fromEntries(subjects.map((s,idx) => [s.id, idx]));
+
+      // ----- RESEARCH METHODOLOGY (first 10 unique; duplicates removed) -----
+      const researchQs = [
+        { text: "A systematic investigation of certain phenomena characterized by gathering of data accurately, recording and critical analysis and interpretation of all facts about the phenomena.", options: ["A. Sample", "B. Title page", "C. Footnotes", "D. Research"], ans: 3 },
+        { text: "It shows the title, full name of the author and the submission statement which include the faculty of school.", options: ["A. Research", "B. Introduction", "C. Title page", "D. Sample"], ans: 2 },
+        { text: "Refers to a factor, characteristics or condition of a person, a group of persons, a thing, a program, an event and etc. which takes on values that can be measured categorically and quantitatively.", options: ["A. Tally sheet", "B. Sample", "C. Variables", "D. Questionnaires"], ans: 2 },
+        { text: "A requirement for the completion of master's course and it is to be written by candidate for an academic degree.", options: ["A. Hypothesis", "B. Research", "C. Master's thesis", "D. Variables"], ans: 2 },
+        { text: "The introductory paragraph under the main topical component merely enumerated the topical sections by subject areas that are to be covered in it.", options: ["A. Related literature", "B. Research instrument", "C. Bibliography", "D. Table of contents"], ans: 0 },
+        { text: "Used to refer to groups of aggregates of people used as respondents in the process of gathering data information and other vital points which will enable the researcher to come up with accurate hypothesis.", options: ["A. Sample", "B. Population", "C. Hypothesis", "D. Acknowledgment"], ans: 1 },
+        { text: "It explained in this section is the nature, coverage and time frame of the study.", options: ["A. Conceptual framework", "B. Importance of the study", "C. Definition of terms used", "D. Scope and delimitation of the study"], ans: 3 },
+        { text: "It serves to orient the reader on what prompted the researchers to undertake the study and it gives a brief narrative explanation on the nature and background of the problem area in general and rationale of the study.", options: ["A. Introduction", "B. Statement of the problem", "C. Conceptual framework", "D. Sub-problems"], ans: 0 },
+        { text: "The main component expounds on the theory, indicator and variables that led to the evolvement of the research problem and its corresponding hypothesis.", options: ["A. Statement of the problem", "B. Introduction", "C. Conceptual framework", "D. Title of the study"], ans: 2 },
+        { text: "The details on the research or experimental instrument that was used are described by its nature, purpose, construction, content, validation, pre-testing and rationale for its use are explained.", options: ["A. Historical background", "B. Research instrument", "C. Research method", "D. Validation of research instrument"], ans: 1 }
+      ];
+      subjects[0].questions = researchQs;
+
+      // ----- STATISTICS (6 items) -----
+      subjects[1].questions = [
+        { text: "Using the given problem, what is the average mean for Educational Leaders?", options: ["A. 3.75", "B. 3.76", "C. 3.77", "D. 3.78"], ans: 2 },
+        { text: "What is the average mean for Teacher-respondents?", options: ["A. 3.76", "B. 3.77", "C. 3.78", "D. 3.79"], ans: 3 },
+        { text: "What is the SD₁?", options: ["A. 0.0399", "B. 0.0400", "C. 0.0401", "D. 0.0410"], ans: 1 },
+        { text: "What is the SD₂?", options: ["A. 0.0399", "B. 0.0400", "C. 0.0401", "D. 0.0410"], ans: 1 },
+        { text: "What is the value of the computed t-test?", options: ["A. 0.707", "B. 0.700", "C. 0.701", "D. 0.770"], ans: 0 },
+        { text: "Based on the result of the t-test computation, what is the decision and conclusion of the null hypothesis?", options: ["A. The null hypothesis is accepted while reject the alternative and the conclusion is significant.", "B. The null and alternative hypothesis are rejected and the conclusion is significant", "C. The null hypothesis is accepted and the conclusion is insignificant", "D. The null hypothesis is rejected and the conclusion is insignificant"], ans: 2 }
+      ];
+
+      // ED 216 FOUNDATIONS PART 1 (10 items)
+      subjects[2].questions = [
+        { text: "The science of mental discipline.", options: ["A. Metaphysics", "B. Ethics", "C. Logic", "D. Axiology"], ans: 2 },
+        { text: "A philosophy that teaches the value of right and wrong.", options: ["A. Logic", "B. Ethics", "C. Axiology", "D. Ontology"], ans: 1 },
+        { text: "One of the greatest influenced in the field of Education and teaching is the philosophy of idealism. Who is the Father of Idealism philosophy?", options: ["A. John Dewey", "B. Aristotle", "C. Plato", "D. B.F. Skinner"], ans: 2 },
+        { text: "The Philosophy of socialism/communism influenced not only in the government system, the life of the people but more so in the area of Education. Who is the greatest socialist of all times?", options: ["A. Hegel", "B. Rene Descartes", "C. Carl Marx", "D. Martin Bauber"], ans: 2 },
+        { text: "Existentialism is a philosophy that teaches 'Essence precedes existence'. Applied in Education it means 'knowledge come before the learning'. Who is the founder of existentialism?", options: ["A. Rene Descartes", "B. John Dewey", "C. Aristotle", "D. B.F. Skinner"], ans: 0 },
+        { text: "In Psychology one of the hottest issues is not whether the egg or the hen coming first but rather it is this question, 'When does life begins?'", options: ["A. Upon birth", "B. Upon union of the egg cell and the sperm cell", "C. Upon conception", "D. Upon release of egg cell from the ovum"], ans: 1 },
+        { text: "Education or learning outcomes depend much on the preparation of motivation provided according to who?", options: ["A. B.F. Skinner", "B. Edward Thorndike", "C. John Dewey", "D. Confucius"], ans: 1 },
+        { text: "According to the Philosophy of Pragmatism, the role of Education is:", options: ["A. Utilitarianism or Practicality", "B. Exhibition", "C. For the future", "D. For preservation of knowledge"], ans: 0 },
+        { text: "According to the government, the primary educational institution is:", options: ["A. The church", "B. The school", "C. The government", "D. The family"], ans: 3 },
+        { text: "In education, the people know its roots through:", options: ["A. Religion", "B. Government", "C. Culture", "D. Business"], ans: 2 }
+      ];
+
+      // ED 216 FOUNDATIONS PART 2 (10 items)
+      subjects[3].questions = [
+        { text: "The behavior or value desired has caught the care and interest of the learner.", options: ["A. Retention", "B. Attention", "C. Reinforcement", "D. Motoric reproduction"], ans: 1 },
+        { text: "Transfer of learning refers to the facility in learning subject matter due to a previously learned one. This theory asserted that the skill or training gained in the study of another subject.", options: ["A. The theory of generalization", "B. The theory of identical elements", "C. Mental discipline", "D. Configuration"], ans: 2 },
+        { text: "The hardest things to teach are", options: ["A. Knowledge and Information", "B. Habit and Skills", "C. Attitudes and appreciation", "D. Values Evaluation"], ans: 2 },
+        { text: "Personality traits learned interaction with people illustrates the", options: ["A. Social", "B. Psychological", "C. Biological", "D. Environment"], ans: 0 },
+        { text: "Man is innately good and self-actualization is his goal according to", options: ["A. Horney", "B. Fromm", "C. Maslow", "D. Vygotsky"], ans: 2 },
+        { text: "The most common agency in the propagation of the culture is the", options: ["A. Newspaper", "B. TV", "C. School", "D. Community"], ans: 2 },
+        { text: "Compassion for the unfortunate is", options: ["A. An attitude", "B. A value", "C. A character", "D. A trait, that is admirable"], ans: 0 },
+        { text: "Who speaks the important function of education is to determine what every individual is by nature capable and fitted of doing things?", options: ["A. Socrates", "B. Comenius", "C. Locke", "D. Plato"], ans: 3 },
+        { text: "It analyzes the origin, types and characteristics, criteria and knowledge of values.", options: ["A. Epistemology", "B. Axiology", "C. Metaphysics", "D. Entomology"], ans: 1 },
+        { text: "This functions, the main concerns of the school, it to pass on the accumulated experiences of the pass generations to the incoming generations.", options: ["A. Instructional function", "B. Social service function", "C. Conservation function", "D. Research function"], ans: 0 }
+      ];
+
+      // ED 242 (8 items)
+      subjects[4].questions = [
+        { text: "The computer application used to manipulate numerical data with formulas.", options: ["A. Word", "B. Excel", "C. PowerPoint", "D. Photoshop"], ans: 1 },
+        { text: "The term 'software' refers to", options: ["A. computer programs only", "B. machinery", "C. computer manuals only", "D. a collection of computer programs."], ans: 3 },
+        { text: "It is also known as the computer's brain since it interprets commands and executes calculations.", options: ["A. keyboard", "B. monitor", "C. Central processing unit(CPU)", "D. Mouse"], ans: 2 },
+        { text: "The course number of the descriptive title 'Information Technology in Computer Education' subject for Master of Arts in Education.", options: ["A. Ed. 313", "B. PA 213", "C. ED 242", "D. BA 214"], ans: 2 },
+        { text: "Which of the following definitions of information technology is correct?", options: ["A. Information technology is the application of physical and social science principles to the processing of various types of information.", "B. Information Technology refers to the use of hardware and software for storage, retrieval, processing and distributing.", "C. Information Technology refers to the use of hardware and software for processing information.", "D. The term 'Information Technology' refers to the use of hardware and software to disseminate useful information."], ans: 1 },
+        { text: "The shortcut key to remove the selection from the active document and place it on the clipboard.", options: ["A. CTRL+T", "B. CTRL X", "C. CTRL V", "D. CTRL C"], ans: 1 },
+        { text: "The keyboard shortcuts for text alignment to the left.", options: ["A. CTRL J", "B. CTRL E", "C. CTRL L", "D. CTRL R"], ans: 2 },
+        { text: "Which of the following is not a PAGE LAYOUT.", options: ["A. Margin", "B. Orientation", "C. Size", "D. Paste"], ans: 3 }
+      ];
+
+      // EDUC 229 (10)
+      subjects[5].questions = [
+        { text: "Reasons why rational and right decisions may not be possible, except:", options: ["A. A decision cannot be fully dependent", "B. Inadequate information, data and knowledge", "C. Personal element in decision-making", "D. Uncertain environment"], ans: 0 },
+        { text: "Who contributed the 14 principles of management that help an educational leader run the school effectively.", options: ["A. Abraham Harold Maslow", "B. Frederick Herzberg", "C. Frederick Winslow Taylor", "D. Henri Fayol"], ans: 3 },
+        { text: "It is a function of management by which the concern is able to define the role positions, the jobs related and the co-ordination between authority and responsibility.", options: ["A. Controlling", "B. Leading", "C. Organizing", "D. Planning"], ans: 2 },
+        { text: "It is the process of planning, organizing and directing activities in a school, effectively utilizing human and material resources, in order to accomplish the school's objectives.", options: ["A. Educational leadership", "B. Educational management", "C. Educational planning", "D. Management"], ans: 1 },
+        { text: "The following are the challenges of human resource management in education, except:", options: ["A. Current call for the use of ICT in education", "B. Lack of continuous learning and succession planning", "C. Poor working condition", "D. Poor recruitment process"], ans: 1 },
+        { text: "This principle of management insists that a person in the organization should receive instructions from one superior only.", options: ["A. Centralization", "B. Homogeneous assignment", "C. Scalar Principle", "D. Unity of command"], ans: 3 },
+        { text: "What is Clayton Paul Alderfer's contribution to management?", options: ["A. Existence, Relatedness and Growth Theory of motivation", "B. MBO or Management by Objectives", "C. Motivator-Hygiene Theory", "D. Need Theory and Motivator-Hygiene Theory"], ans: 0 },
+        { text: "It is a field of study that investigates the process of analyzing, designing, developing, implementing, and evaluating the instructional environment and learning materials in order to improve teaching and learning.", options: ["A. A multimedia function", "B. Educational technology", "C. Instructional materials", "D. Management of technology"], ans: 1 },
+        { text: "What are the four elements of directing?", options: ["A. Communication, Leadership, Motivation and Supervision", "B. Communication, Supervision, Leadership, and Management", "C. Management, Leadership, Cooperation and Motivation", "D. Motivation, Management, Supervision and Communication"], ans: 0 },
+        { text: "Who first strongly advocated the scientific method of decision-making in management?", options: ["A. Frederick Herzberg", "B. Frederick Winslow Taylor", "C. Henri Fayol", "D. Peter F. Drucker"], ans: 3 }
+      ];
+
+      // EDUC 230 (10)
+      subjects[6].questions = [
+        { text: "Referred to as the program of development of the educational institutions.", options: ["A. Institutional planning", "B. Educational planning", "C. Educational system", "D. Educational planning and evaluation"], ans: 0 },
+        { text: "It is incorporated the processes of health promotion begins with the development of positive, supportive and caring learning environments.", options: ["A. Planning and development", "B. Curriculum", "C. Physical education planning", "D. Curriculum development"], ans: 2 },
+        { text: "Means looking ahead and chalking out future courses of action to be followed.", options: ["A. Futuristic planning", "B. Budget planning", "C. Curriculum development", "D. Budget proposal"], ans: 0 },
+        { text: "Is one of the vital components in attaining quality basic education.", options: ["A. Quality education", "B. Educational standard", "C. Planning and development", "D. Educational planning"], ans: 3 },
+        { text: "It is the practice of initiating, planning, executing and closing the work a team to achieve specific goals and meet specific success criteria at the specified time.", options: ["A. Philippine educational system", "B. Managerial plan", "C. Project implementation", "D. Project management"], ans: 3 },
+        { text: "It refers as the heart of the project life cycle and tells everyone involved where you're going and how you're going to get there.", options: ["A. Project planning", "B. Project cost", "C. Project analysis", "D. Project evaluation"], ans: 0 },
+        { text: "It is a carefully formed. Time-based opinion about the future.", options: ["A. Planning", "B. Forecast", "C. Scenario", "D. Implementation"], ans: 1 },
+        { text: "It is a process of moving from goal formulation through statements of specific objectives, definition and evaluation of alternative strategies, implementation and evaluation with feedback loops existing in each step of the process.", options: ["A. Normative forecast", "B. Implementation", "C. Planning", "D. Scenario"], ans: 2 },
+        { text: "Serves as an aid to the planner in the definition and evaluation of alternatives.", options: ["A. Forecasting", "B. Evaluating", "C. Decision-making", "D. Consultative approach"], ans: 0 },
+        { text: "It is a logical outcome of the operation of a basic multifold trend and does not claim to foresee the outcomes of radical and unpredictable changes.", options: ["A. Evaluation", "B. Planning", "C. Scenario", "D. Forecast"], ans: 2 }
+      ];
+
+      // ED 233 (10)
+      subjects[7].questions = [
+        { text: "In a time of reduced school funding educational leaders can best help ensure that sufficient resources are available...", options: ["A. Using student performance data to identify areas of greatest weakness...", "B. Soliciting views about budget priorities...", "C. Applying a formula distributing resources...", "D. Using budget from the previous year..."], ans: 0 },
+        { text: "In a school district where students from particular cultural and language backgrounds are significantly over represented in special education...", options: ["A. Assessment instruments used...", "B. The local curriculum...", "C. Instructional strategies used with students prior to referral...", "D. The placement procedures..."], ans: 2 },
+        { text: "Staff at a middle school are ready to implement instructional changes... The leader can best ensure... by prompting staff to take which additional action?", options: ["A. Outlining steps for phasing in...", "B. Communicating the rationale...", "C. Seeking individual professional development...", "D. Developing a plan for assessing student improvement..."], ans: 3 },
+        { text: "One goal at an elementary school is to create a climate that reflects a commitment to the belief that all children can learn... school leaders can best support by emphasizing which classroom practice?", options: ["A. Engaging students in team academic competitions", "B. Using a variety of grouping strategies for activities.", "C. Surveying students regularly about their interest", "D. Differentiating standards used to evaluate students work"], ans: 1 },
+        { text: "In which situation would peer coaching be the most appropriate professional development strategy?", options: ["A. Teachers wish to learn more about benefits...", "B. Teachers have identified a problem...", "C. Teachers from several schools...", "D. Teachers have received training on a new instructional strategy and are ready to implement it."], ans: 3 },
+        { text: "Which behavior by members of a high school's school site council should be of greatest concern?", options: ["A. Some members are more reserved...", "B. Several members of instructional staff often dismiss comments by noninstructional staff...", "C. Two members hold different political views...", "D. Certain members have difficulty staying on topic"], ans: 1 },
+        { text: "A new leader takes over at a school with high teacher turnover... most useful first step?", options: ["A. Surveying permanent teaching staff", "B. Conducting extensive exit interviews with probationary teachers who have left", "C. Reviewing current literature", "D. Distributing a survey to parents"], ans: 1 },
+        { text: "As part of crisis response plan... to maximize effectiveness, it is most important to ensure:", options: ["A. Responsibilities of each individual are clearly defined", "B. Each individual reports to at least two others", "C. Overall leadership spread among several", "D. Membership drawn from longest-serving staff"], ans: 0 },
+        { text: "In determining resources for English language learner program, educational leaders should first:", options: ["A. Evaluate success of the program", "B. Calculate proportion of total revenues", "C. Project resources needed to maintain other programs", "D. Identify state and federal mandates and categorical aid"], ans: 3 },
+        { text: "Administrators find marijuana... Goss v. Lopez requires before suspension:", options: ["A. Review locker search manner", "B. Provide legal advice", "C. Arrange for an impartial hearing", "D. Demonstrate nondiscriminatory application"], ans: 2 }
+      ];
+
+      // EDUC 234 (10)
+      subjects[8].questions = [
+        { text: "In trying to understand others what must be your attitude toward yourself?", options: ["A. Adopt the attitude that the boss can't be wrong.", "B. Don't think about yourself at all.", "C. Know your weakness and make allowance for the weakness of others.", "D. All of the above"], ans: 2 },
+        { text: "Effective motivation is evidenced by", options: ["A. Employees taking pride in their work", "B. Employees coordinating their work with others", "C. Employees concentrating and suggesting improvements", "D. All of the above"], ans: 3 },
+        { text: "To a group of experienced workers it is common to use;", options: ["A. implied orders", "B. Request orders", "C. Suggestive orders", "D. Command orders"], ans: 0 },
+        { text: "COMMUNICATION IS;", options: ["A. a One-way process", "B. a two-way process", "C. a three-way process", "D. a multi process"], ans: 1 },
+        { text: "The best performance is obtained from individuals by;", options: ["A. Giving orders", "B. criticizing them often", "C. showing an interest in their feelings", "D. Assigning higher quotes"], ans: 2 },
+        { text: "in handling complaints. Best producer for a principal must;", options: ["A. Discourage employee", "B. Make decision immediately", "C. Discuss complaint in presence of", "D. Various personal"], ans: 1 },
+        { text: "Individuals differ because of", options: ["A. Heredity", "B. Environment", "C. Both heredity and environment", "D. Various personality traits"], ans: 2 },
+        { text: "The most effective incentive to employee is", options: ["A. Control", "B. Correction", "C. Praise", "D. All of the above"], ans: 3 },
+        { text: "It is about solving problems.", options: ["A. Creativity", "B. Collaboration", "C. Communication", "D. Critical Thinking"], ans: 3 },
+        { text: "It can be fun and relaxed to take up teaching as a profession as you can be in the company of student which keeps you young.", options: ["A. Balancing Diverse Learning needs", "B. Limitations of disciplining students", "C. Lot of paperwork", "D. Get burn out easily"], ans: 3 }
+      ];
+
+      // EDUC 238 (10)
+      subjects[9].questions = [
+        { text: "An organization formed to represent the interest of workers in bargaining with employers for contracts concerning wages and other working conditions", options: ["A. Labor Union", "B. Institution", "C. Federation", "D. National Group"], ans: 0 },
+        { text: "Locates competent employees and getting them to work for the organization", options: ["A. Training and Development", "B. Staffing", "C. Motivation", "D. Maintenance"], ans: 1 },
+        { text: "A process of activating behavior, sustaining it and directing towards a particular goal", options: ["A. Maintenance", "B. Evaluation", "C. Motivation", "D. Compensation"], ans: 2 },
+        { text: "Major activities of Staffing consist of the following except:", options: ["A. Strategic Human Resource Planning", "B. Recruitment", "C. Motivation", "D. Selection"], ans: 2 },
+        { text: "Maintenance insures employee retention for better productivity except of:", options: ["A. Safety", "B. Health", "C. Communication Programs", "D. Performance Evaluation"], ans: 3 },
+        { text: "A method of employee development which involves moving an employee from one position to another to broaden knowledge.", options: ["A. Formal Education", "B. Job Rotation", "C. Mentoring", "D. Special Projects"], ans: 1 },
+        { text: "This refers to the pattern of work-related experiences that span the course of a person's life", options: ["A. Career", "B. Career Development", "C. Career Planning", "D. Career Management"], ans: 0 },
+        { text: "Career Cycle consists of stages. Which arrangement is best. I. Growth II. Exploration III. Establishment IV. Maintenance V. Decline", options: ["A. I, II, III, IV, V", "B. II, III, I, IV, V", "C. I, IV, II, III, V", "D. V, IV, III, II, I"], ans: 0 },
+        { text: "This is what the employees receive in exchange for their work.", options: ["A. Time", "B. Productivity", "C. Compensation", "D. Termination"], ans: 2 },
+        { text: "The processes of communication are listed. Which process is best implemented. I. Receiving idea... II. Message Decoding III. Channel Transmission IV. Message Encoding V. Developing idea", options: ["A. I,II,III,IV,V", "B. III,II,I,IV,V", "C. II,I,III,IV,V", "D. V,IV,III,II,I"], ans: 3 }
+      ];
+
+      // COGNATE 210 (10)
+      subjects[10].questions = [
+        { text: "It is a process when Educators usually teach students in their native language in conjunction with a second language...", options: ["A. bilingual education", "B. dual language program", "C. ESL program", "D. k to 12 program"], ans: 0 },
+        { text: "Which country has the world's best education system in the year 2020?", options: ["A. Australia", "B. Japan", "C. Netherlands", "D. United Kingdom"], ans: 3 },
+        { text: "Taehak is the earliest form of formal education in what country?", options: ["A. China", "B. Japan", "C. South Korea", "D. Taiwan"], ans: 2 },
+        { text: "Which country included adult education as one of their educational categories?", options: ["A. China", "B. Philippines", "C. Taiwan", "D. Vietnam"], ans: 0 },
+        { text: "Who brought formal education in the Philippines?", options: ["A. Americans", "B. Japan", "C. Spaniards", "D. Spain"], ans: 2 },
+        { text: "Number of years for a compulsory education in the Philippines.", options: ["A. 10", "B. 11", "C. 12", "D. 13"], ans: 3 },
+        { text: "It is a discipline in the social sciences which entails the scrutiny and evaluation of different educational systems.", options: ["A. Comparative education", "B. Comprehensive education", "C. Educational management", "D. Educational planning"], ans: 0 },
+        { text: "What country has the same Number of years with the Philippines for a compulsory education?", options: ["A. China", "B. Indonesia", "C. Singapore", "D. South Korea"], ans: 2 },
+        { text: "The following are the reasons why K to 12 program is necessary, except:", options: ["A. High school graduates not prepared for work", "B. Graduates too young to enter labor force", "C. Not adequately willing to pursue higher education", "D. Students end up shifting courses"], ans: 2 },
+        { text: "What statement is correct in terms of the education system of Japan and Philippines?", options: ["A. Both aim for quality education", "B. Both have definite grading system", "C. Both Japan and the Philippines have a standard lesson plan", "D. Both required professional license to teach in government institutions"], ans: 1 }
+      ];
+
+      // ED 239 (10)
+      subjects[11].questions = [
+        { text: "Administration is a process with these necessary elements except one:", options: ["A. Planning", "B. Organizing", "C. Directing", "D. Testing"], ans: 3 },
+        { text: "An Element of Administration that implies analysis of the alternatives particularly the consequence in the future:", options: ["A. Organizing", "B. Planning", "C. Decision Making", "D. Directing"], ans: 2 },
+        { text: "Technically, it is the organization's direction, and coordination and control of human and material resources to achieve the desired end.", options: ["A. Supervision", "B. Administration", "C. Planning", "D. Controlling"], ans: 1 },
+        { text: "Refers to all efforts designated school officials directed towards providing leadership for teachers and other educational workers in the improvement of instructions.", options: ["A. Supervision", "B. Administration", "C. Planning", "D. Organizing"], ans: 0 },
+        { text: "An inspectional supervisory methods in which the class was observed, but nothing was done to help the teacher improves the job.", options: ["A. Laissez-faire supervision", "B. Coercive Supervision", "C. Supervision as Training and Guidance", "D. Supervision as Democratic Professional Leadership"], ans: 0 },
+        { text: "The following are the phases of clinical supervision except one:", options: ["A. Planning", "B. Observation", "C. Analysis", "D. Testing"], ans: 3 },
+        { text: "Administration is a process which six elements except one are important:", options: ["A. Planning- organizing", "B. Communicating- Coordinating", "C. Evaluating & Decision Making", "D. Dictating and Consuming"], ans: 3 },
+        { text: "Which is the best style of Leadership?", options: ["A. Dictatorial", "B. Authoritarian", "C. Democratic – participative leadership", "D. Laissez-faire"], ans: 2 },
+        { text: "Techniques of supervision include the following except one:", options: ["A. Teacher Diagnosis", "B. Learner diagnosis", "C. Diagnosis of curricular offerings", "D. Survey of student population"], ans: 3 },
+        { text: "Administration and supervision as an applied field is also common in the following area except one:", options: ["A. School", "B. Engineering", "C. Medicine", "D. History"], ans: 3 }
+      ];
+
+      // ED 240 (10)
+      subjects[12].questions = [
+        { text: "Which of the following is NOT a function of budgeting?", options: ["A. Decision making", "B. Controlling", "C. Planning", "D. Motivating"], ans: 0 },
+        { text: "A fixed budget is _________________", options: ["A. A budget that never changes", "B. A budget that itemizes the fixed cost", "C. A budget that ignores inflation", "D. A budget that is set for a specified level activity."], ans: 3 },
+        { text: "Which of the following is NOT one of the purposes of budget?", options: ["A. To enable a flexibility of approach to company policies", "B. Planning and control", "C. The alignment of individual and institutional goals.", "D. To optimize the use of scarce resources"], ans: 0 },
+        { text: "What does it mean to be responsible for financial management in education?", options: ["A. To spend your own money", "B. To be responsible for oversight and reporting.", "C. To be responsible for winning grants", "D. To pay teachers by handling paychecks personally."], ans: 1 },
+        { text: "The long-run objective of school financial management is to_______________.", options: ["A. maximize earnings of teachers", "B. maximize the value of the school budget.", "C. maximize return on investment.", "D. maximize share of students."], ans: 1 },
+        { text: "Which school funding DOES NOT come from the government of the Philippines?", options: ["A. Maintenance and other operating expenses.", "B. Special Education Fund", "C. School-Based Feeding Program", "D. Donations from parents and private individuals."], ans: 3 },
+        { text: "In an education system, financial management involves overseeing funding for which of the following?", options: ["A. Salaries and honorarium", "B. School buildings and grounds", "C. Student programs", "D. All of the answers are correct"], ans: 3 },
+        { text: "In the Philippines, there is no specific education tax, the following are sources of government income to support education. Which is NOT one?", options: ["A. Excise tax specifically levied on certain goods", "B. Taxes imposed by law", "C. Tuition fees imposed on students in public high schools", "D. Rental for lease of school sites"], ans: 0 },
+        { text: "Budget preparation is a complex process. Which is the correct order? a. Determine objectives... b. Prepare detailed plans... c. Priority... d. Prepare plans for implementation e. Develop evaluation plan", options: ["A. a,b,c,d,e", "B. a,c,b,d,e", "C. c,b,d,a,e", "D. e,d,c,b,a"], ans: 0 },
+        { text: "There are several factors to determine financial compensation. Which factor is considered when compensation is based on consumer price index?", options: ["A. Cost of Living", "B. Government Control", "C. Prevailing Wage Level", "D. Labor Market Conditions"], ans: 0 }
+      ];
+
+      // ---------- GLOBAL STATE ----------
+      let currentSubjectIndex = 0;
+      let userAnswers = {}; // key: "subjIdx_qIdx" -> selected option index (0-based)
+      let submitted = false;
+      let totalQuestions = subjects.reduce((sum, s) => sum + s.questions.length, 0);
+
+      // DOM elements
+      const sidebar = document.getElementById('sidebar');
+      const subjectListEl = document.getElementById('subjectList');
+      const quizContainer = document.getElementById('quizContainer');
+      const currentSubjectTitle = document.getElementById('currentSubjectTitle');
+      const questionCountDisplay = document.getElementById('questionCountDisplay');
+      const submitBtn = document.getElementById('submitAllBtn');
+      const resetBtn = document.getElementById('resetAnswersBtn');
+      const scorePanel = document.getElementById('scorePanel');
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+
+      // Render sidebar
+      function renderSidebar() {
+        subjectListEl.innerHTML = '';
+        subjects.forEach((subj, idx) => {
+          const li = document.createElement('li');
+          li.className = `subject-item ${idx === currentSubjectIndex ? 'active' : ''}`;
+          li.innerHTML = `<i>${subj.name.split(' ')[0]}</i> ${subj.name}`;
+          li.addEventListener('click', () => {
+            currentSubjectIndex = idx;
+            submitted = false;
+            renderCurrentSubject();
+            renderSidebar();
+            if (window.innerWidth < 720) sidebar.classList.add('collapsed');
+          });
+          subjectListEl.appendChild(li);
+        });
+      }
+
+      function renderCurrentSubject() {
+        const subj = subjects[currentSubjectIndex];
+        currentSubjectTitle.textContent = subj.name;
+        const questions = subj.questions;
+        questionCountDisplay.textContent = `${questions.length} items`;
+
+        let html = '';
+        questions.forEach((q, qIdx) => {
+          const globalKey = `${currentSubjectIndex}_${qIdx}`;
+          const selected = userAnswers[globalKey] !== undefined ? userAnswers[globalKey] : null;
+          let cardClass = 'question-card';
+          if (submitted) {
+            const isCorrect = (selected === q.ans);
+            cardClass += isCorrect ? ' correct-highlight' : ' wrong-highlight';
+          }
+          html += `<div class="${cardClass}" data-qidx="${qIdx}">`;
+          html += `<div class="q-text">${qIdx+1}. ${q.text}</div>`;
+          html += `<div class="options">`;
+          q.options.forEach((opt, optIdx) => {
+            const checked = (selected === optIdx) ? 'checked' : '';
+            html += `<div class="option">`;
+            html += `<input type="radio" name="q${currentSubjectIndex}_${qIdx}" value="${optIdx}" id="opt_${currentSubjectIndex}_${qIdx}_${optIdx}" ${checked} data-subj="${currentSubjectIndex}" data-qidx="${qIdx}" data-opt="${optIdx}">`;
+            html += `<label for="opt_${currentSubjectIndex}_${qIdx}_${optIdx}">${opt}</label>`;
+            if (submitted) {
+              if (optIdx === q.ans) html += `<span class="feedback-icon" style="color:#2b8c5e;">✓</span>`;
+              else if (selected === optIdx && selected !== q.ans) html += `<span class="feedback-icon" style="color:#c23b3b;">✗</span>`;
+            }
+            html += `</div>`;
+          });
+          html += `</div></div>`;
+        });
+        quizContainer.innerHTML = html;
+
+        // Attach event listeners to radio buttons
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+          radio.addEventListener('change', (e) => {
+            if (submitted) return;
+            const subjIdx = parseInt(radio.dataset.subj);
+            const qIdx = parseInt(radio.dataset.qidx);
+            const opt = parseInt(radio.value);
+            userAnswers[`${subjIdx}_${qIdx}`] = opt;
+          });
+        });
+
+        updateScorePanel();
+      }
+
+      function updateScorePanel() {
+        if (!submitted) {
+          const answered = Object.keys(userAnswers).length;
+          scorePanel.textContent = `📝 Answered: ${answered} / ${totalQuestions}`;
+        } else {
+          let correct = 0;
+          subjects.forEach((subj, sIdx) => {
+            subj.questions.forEach((q, qIdx) => {
+              const key = `${sIdx}_${qIdx}`;
+              if (userAnswers[key] === q.ans) correct++;
+            });
+          });
+          const percent = ((correct / totalQuestions)*100).toFixed(1);
+          scorePanel.textContent = `🏆 Score: ${correct} / ${totalQuestions} (${percent}%)`;
+        }
+      }
+
+      function submitAll() {
+        submitted = true;
+        // re-render current subject to show highlights
+        renderCurrentSubject();
+        updateScorePanel();
+      }
+
+      function resetAllAnswers() {
+        userAnswers = {};
+        submitted = false;
+        renderCurrentSubject();
+        updateScorePanel();
+      }
+
+      // Toggle sidebar (collapsible)
+      function toggleSidebar(force) {
+        if (force !== undefined) sidebar.classList.toggle('collapsed', force);
+        else sidebar.classList.toggle('collapsed');
+      }
+
+      // Mobile: open sidebar
+      function openSidebarMobile() {
+        sidebar.classList.remove('collapsed');
+      }
+
+      // Event listeners
+      mobileMenuBtn.addEventListener('click', openSidebarMobile);
+      sidebarToggleBtn.addEventListener('click', () => toggleSidebar());
+      submitBtn.addEventListener('click', submitAll);
+      resetBtn.addEventListener('click', resetAllAnswers);
+
+      // Handle window resize to reset sidebar for desktop
+      window.addEventListener('resize', () => {
+        if (window.innerWidth > 720) sidebar.classList.remove('collapsed');
+        else sidebar.classList.add('collapsed');
+      });
+
+      // Initialize
+      function init() {
+        renderSidebar();
+        renderCurrentSubject();
+        if (window.innerWidth <= 720) sidebar.classList.add('collapsed');
+      }
+      init();
+    })();
+  </script>
+</body>
+</html>
