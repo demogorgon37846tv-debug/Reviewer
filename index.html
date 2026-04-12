@@ -731,6 +731,7 @@
 
       // ---------- GLOBAL STATE ----------
       let currentSubjectIndex = 0;
+      let viewingSummary = false;
       let userAnswers = {}; // key: "subjIdx_qIdx" -> selected option index (0-based)
       let submitted = false;
       let totalQuestions = subjects.reduce((sum, s) => sum + s.questions.length, 0);
@@ -896,43 +897,26 @@
       }
 
       function resetCurrentSubjectAnswers() {
-        if (viewingSummary) {
-          // If viewing summary, reset all answers and go back to first subject
-          userAnswers = {};
-          submitted = false;
-          
-          // Restore all subjects to original question order
-          subjects.forEach((subj, idx) => {
-            subj.questions = originalQuestions[idx].map(q => ({
-              text: q.text,
-              options: [...q.options],
-              ans: q.ans
-            }));
-          });
-          
-          viewingSummary = false;
-          currentSubjectIndex = 0;
-          renderCurrentSubject();
-          renderSidebar();
-        } else {
-          // Reset the current subject: clear answers and restore original questions
-          const subj = subjects[currentSubjectIndex];
-          
-          // Clear answers for the current subject
-          subj.questions.forEach((q, qIdx) => {
-            delete userAnswers[`${currentSubjectIndex}_${qIdx}`];
-          });
-          
-          // Restore original questions for this subject
-          subj.questions = originalQuestions[currentSubjectIndex].map(q => ({
-            text: q.text,
-            options: [...q.options],
-            ans: q.ans
-          }));
-          
-          // Re-render with fresh questions
-          renderCurrentSubject();
-        }
+        // Reset the current subject: clear answers and restore original questions
+        const subj = subjects[currentSubjectIndex];
+        
+        // Clear answers for the current subject
+        subj.questions.forEach((q, qIdx) => {
+          delete userAnswers[`${currentSubjectIndex}_${qIdx}`];
+        });
+        
+        // Restore original questions for this subject
+        subj.questions = originalQuestions[currentSubjectIndex].map(q => ({
+          text: q.text,
+          options: [...q.options],
+          ans: q.ans
+        }));
+        
+        // Reset the submitted flag to show original unsubmitted state
+        submitted = false;
+        
+        // Re-render with fresh questions and clear highlighting
+        renderCurrentSubject();
         updateScorePanel();
       }
 
