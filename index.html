@@ -269,6 +269,21 @@
       margin-top: 8px;
       color: #4a627a;
     }
+    .shuffle-btn {
+      background: #7aa9d4;
+      border: 1px solid #5a8ab4;
+      padding: 10px 20px;
+      border-radius: 40px;
+      font-weight: 500;
+      cursor: pointer;
+      color: white;
+      font-size: 1rem;
+      transition: 0.2s;
+    }
+    .shuffle-btn:hover {
+      background: #5a8ab4;
+      transform: scale(1.02);
+    }
   </style>
 </head>
 <body>
@@ -286,6 +301,7 @@
     <div class="top-bar">
       <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
       <h2 class="subject-title" id="currentSubjectTitle">Research Methodology</h2>
+      <button class="shuffle-btn" id="shuffleBtn" title="Shuffle questions and options">🔀 Shuffle</button>
       <span class="progress-badge" id="questionCountDisplay"></span>
     </div>
     <div id="quizContainer" class="quiz-container"></div>
@@ -516,6 +532,55 @@
       const scorePanel = document.getElementById('scorePanel');
       const mobileMenuBtn = document.getElementById('mobileMenuBtn');
       const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+      const shuffleBtn = document.getElementById('shuffleBtn');
+
+      // Fisher-Yates shuffle algorithm
+      function shuffleArray(arr) {
+        const newArr = arr.slice(); // Create a copy
+        for (let i = newArr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+        }
+        return newArr;
+      }
+
+      // Shuffle questions and their options
+      function shuffleCurrentSubject() {
+        const subj = subjects[currentSubjectIndex];
+        
+        // Shuffle the questions array
+        const shuffledQuestions = shuffleArray(subj.questions);
+        
+        // For each question, shuffle options and update answer index
+        shuffledQuestions.forEach(question => {
+          const optionsWithIndices = question.options.map((opt, idx) => ({
+            text: opt,
+            originalIndex: idx
+          }));
+          
+          const shuffledOptions = shuffleArray(optionsWithIndices);
+          
+          // Find where the correct answer moved to
+          const correctAnswerOriginalIndex = question.ans;
+          const newCorrectAnswerIndex = shuffledOptions.findIndex(
+            item => item.originalIndex === correctAnswerOriginalIndex
+          );
+          
+          // Update question with shuffled options and new answer index
+          question.options = shuffledOptions.map(item => item.text);
+          question.ans = newCorrectAnswerIndex;
+        });
+        
+        // Update the questions array
+        subj.questions = shuffledQuestions;
+        
+        // Reset user answers and submitted state
+        userAnswers = {};
+        submitted = false;
+        
+        // Re-render the quiz
+        renderCurrentSubject();
+      }
 
       // Render sidebar
       function renderSidebar() {
@@ -554,10 +619,15 @@
           html += `<div class="q-text">${qIdx+1}. ${q.text}</div>`;
           html += `<div class="options">`;
           q.options.forEach((opt, optIdx) => {
+            // Strip the letter prefix (A., B., C., D.) from the option text if it exists
+            const optionText = opt.replace(/^[A-D]\.\s*/, '');
+            const letter = String.fromCharCode(65 + optIdx); // Convert 0->A, 1->B, 2->C, 3->D
+            const displayText = `${letter}. ${optionText}`;
+            
             const checked = (selected === optIdx) ? 'checked' : '';
             html += `<div class="option">`;
             html += `<input type="radio" name="q${currentSubjectIndex}_${qIdx}" value="${optIdx}" id="opt_${currentSubjectIndex}_${qIdx}_${optIdx}" ${checked} data-subj="${currentSubjectIndex}" data-qidx="${qIdx}" data-opt="${optIdx}">`;
-            html += `<label for="opt_${currentSubjectIndex}_${qIdx}_${optIdx}">${opt}</label>`;
+            html += `<label for="opt_${currentSubjectIndex}_${qIdx}_${optIdx}">${displayText}</label>`;
             if (submitted) {
               if (optIdx === q.ans) html += `<span class="feedback-icon" style="color:#2b8c5e;">✓</span>`;
               else if (selected === optIdx && selected !== q.ans) html += `<span class="feedback-icon" style="color:#c23b3b;">✗</span>`;
@@ -629,6 +699,7 @@
       sidebarToggleBtn.addEventListener('click', () => toggleSidebar());
       submitBtn.addEventListener('click', submitAll);
       resetBtn.addEventListener('click', resetAllAnswers);
+      shuffleBtn.addEventListener('click', shuffleCurrentSubject);
 
       // Handle window resize to reset sidebar for desktop
       window.addEventListener('resize', () => {
