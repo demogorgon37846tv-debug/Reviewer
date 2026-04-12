@@ -495,6 +495,94 @@
     .shuffle-btn:active {
       transform: translateY(0);
     }
+
+    .summary-panel {
+      background: white;
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid var(--border-color);
+    }
+
+    .summary-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .subject-score-card {
+      padding: 20px;
+      border-radius: var(--radius-md);
+      border-left: 5px solid var(--secondary-color);
+      background: linear-gradient(135deg, #f8faff 0%, #f0f5fa 100%);
+      transition: var(--transition);
+    }
+
+    .subject-score-card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .subject-score-card.strength {
+      border-left-color: var(--accent-color);
+      background: var(--success-bg);
+    }
+
+    .subject-score-card.weakness {
+      border-left-color: var(--error-color);
+      background: var(--error-bg);
+    }
+
+    .subject-name {
+      font-weight: 600;
+      color: var(--text-dark);
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .subject-score-text {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .subject-percentage {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .summary-footer {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 2px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .overall-stats {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .strength-weakness-summary {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
   </style>
 </head>
 <body>
@@ -521,6 +609,7 @@
       <button class="submit-btn" id="submitAllBtn">✅ Submit Answers</button>
       <div class="score-panel" id="scorePanel">Score: — / — (—%)</div>
     </div>
+    <div id="summaryPanel" class="summary-panel" style="display:none;"></div>
     <div class="submit-area">
       <button class="reset-btn" id="clearCurrentAnswersBtn">🗑️ Clear My Answers</button>
     </div>
@@ -546,7 +635,9 @@
         { id: 'ed238', name: '👥 Educ 238 - Personnel Mgmt', questions: [] },
         { id: 'cognate210', name: '🌏 Cognate 210 - Comparative Ed', questions: [] },
         { id: 'ed239', name: '📐 Ed 239 - School Admin & Sup', questions: [] },
-        { id: 'ed240', name: '💰 Educ 240 - Fiscal Management', questions: [] }
+        { id: 'ed240', name: '💰 Educ 240 - Fiscal Management', questions: [] },
+        { id: 'comprehensive', name: '🎯 Comprehensive Exam', questions: [], isComprehensive: true },
+        { id: 'summary', name: '📊 Summary Analysis', questions: [], isSummary: true }
       ];
 
       // Helper to find subject index
@@ -729,11 +820,28 @@
         { text: "There are several factors to determine financial compensation. Which factor is considered when compensation is based on consumer price index?", options: ["A. Cost of Living", "B. Government Control", "C. Prevailing Wage Level", "D. Labor Market Conditions"], ans: 0 }
       ];
 
+      // Populate Comprehensive Exam with all questions from all subjects
+      // Create a mapping of subject indices to their names for reference
+      const comprehensiveQuestions = [];
+      subjects.slice(0, 13).forEach((subject, subjIndex) => {
+        subject.questions.forEach((question, qIndex) => {
+          comprehensiveQuestions.push({
+            text: question.text,
+            options: [...question.options],
+            ans: question.ans,
+            subject: subject.name,
+            subjectIndex: subjIndex
+          });
+        });
+      });
+subjects[13].questions = comprehensiveQuestions;
+
       // ---------- GLOBAL STATE ----------
       let currentSubjectIndex = 0;
       let viewingSummary = false;
       let userAnswers = {}; // key: "subjIdx_qIdx" -> selected option index (0-based)
       let submitted = false;
+      // For comprehensive exam, total questions includes all questions; for individual subjects, use their count
       let totalQuestions = subjects.reduce((sum, s) => sum + s.questions.length, 0);
       
       // Store original questions for reset functionality
@@ -741,7 +849,9 @@
         s.questions.map(q => ({
           text: q.text,
           options: [...q.options],
-          ans: q.ans
+          ans: q.ans,
+          subject: q.subject,
+          subjectIndex: q.subjectIndex
         }))
       );
 
@@ -823,6 +933,13 @@
       function renderCurrentSubject() {
         const subj = subjects[currentSubjectIndex];
         currentSubjectTitle.textContent = subj.name;
+
+        // Handle Summary tab display
+        if (subj.isSummary) {
+          renderSummaryAnalysis();
+          return;
+        }
+
         const questions = subj.questions;
         questionCountDisplay.textContent = `${questions.length} items`;
 
@@ -873,20 +990,195 @@
       }
 
       function updateScorePanel() {
-        if (!submitted) {
-          const answered = Object.keys(userAnswers).length;
-          scorePanel.textContent = `📝 Answered: ${answered} / ${totalQuestions}`;
-        } else {
+        const subj = subjects[currentSubjectIndex];
+        
+        // For summary tab, show overall comprehensive exam score
+        if (subj.isSummary) {
           let correct = 0;
-          subjects.forEach((subj, sIdx) => {
-            subj.questions.forEach((q, qIdx) => {
-              const key = `${sIdx}_${qIdx}`;
-              if (userAnswers[key] === q.ans) correct++;
-            });
+          let total = 0;
+          subjects[13].questions.forEach((q, qIdx) => {
+            const key = `13_${qIdx}`;
+            total++;
+            if (userAnswers[key] === q.ans) correct++;
           });
-          const percent = ((correct / totalQuestions)*100).toFixed(1);
-          scorePanel.textContent = `🏆 Score: ${correct} / ${totalQuestions} (${percent}%)`;
+          const percent = ((correct / total) * 100).toFixed(1);
+          scorePanel.textContent = `🏆 Comprehensive Score: ${correct} / ${total} (${percent}%)`;
+          return;
         }
+        
+        const questionsInCurrentView = subj.questions.length;
+        
+        if (!submitted) {
+          // Count answers only for current subject
+          let answered = 0;
+          subj.questions.forEach((q, qIdx) => {
+            const key = `${currentSubjectIndex}_${qIdx}`;
+            if (userAnswers[key] !== undefined) answered++;
+          });
+          scorePanel.textContent = `📝 Answered: ${answered} / ${questionsInCurrentView}`;
+        } else {
+          // Calculate score for current subject or comprehensive exam
+          let correct = 0;
+          subj.questions.forEach((q, qIdx) => {
+            const key = `${currentSubjectIndex}_${qIdx}`;
+            if (userAnswers[key] === q.ans) correct++;
+          });
+          const percent = ((correct / questionsInCurrentView)*100).toFixed(1);
+          scorePanel.textContent = `🏆 Score: ${correct} / ${questionsInCurrentView} (${percent}%)`;
+        }
+      }
+
+      function renderSummaryAnalysis() {
+        // Calculate scores for each subject (skip comprehensive at index 13 and summary at index 14)
+        const subjectScores = [];
+        for (let i = 0; i <= 12; i++) {
+          const subj = subjects[i];
+          let correct = 0;
+          let total = subj.questions.length;
+          
+          subj.questions.forEach((q, qIdx) => {
+            const key = `${i}_${qIdx}`;
+            if (userAnswers[key] === q.ans) correct++;
+          });
+          
+          const percentage = ((correct / total) * 100).toFixed(1);
+          subjectScores.push({
+            name: subj.name.replace(/^[🎯💻📊📈🧠📚🏫📋🌟🤝👥🌏📐💰]\s/, ''),
+            correct,
+            total,
+            percentage: parseFloat(percentage)
+          });
+        }
+        
+        // Calculate comprehensive exam score
+        let compCorrect = 0;
+        let compTotal = 0;
+        subjects[13].questions.forEach((q, qIdx) => {
+          const key = `13_${qIdx}`;
+          compTotal++;
+          if (userAnswers[key] === q.ans) compCorrect++;
+        });
+        const compPercentage = ((compCorrect / compTotal) * 100).toFixed(1);
+        
+        // Calculate average to identify strengths and weaknesses
+        const avgPercentage = subjectScores.length > 0 
+          ? subjectScores.reduce((sum, s) => sum + s.percentage, 0) / subjectScores.length
+          : 0;
+        
+        // Categorize strengths and weaknesses
+        const strengths = subjectScores.filter(s => s.percentage >= avgPercentage + 10);
+        const weaknesses = subjectScores.filter(s => s.percentage < avgPercentage - 10);
+        
+        // Build summary HTML
+        let html = `<div style="padding: 20px 0;">`;
+        
+        // Overall score card
+        html += `
+          <div style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white; padding: 32px; border-radius: var(--radius-lg); margin-bottom: 24px; text-align: center;">
+            <h2 style="margin: 0 0 16px 0; font-size: 1.3rem;">📊 Comprehensive Exam Score</h2>
+            <div style="font-size: 3rem; font-weight: 800; margin-bottom: 8px;">${compPercentage}%</div>
+            <div style="font-size: 1.1rem; opacity: 0.95;">${compCorrect} / ${compTotal} questions correct</div>
+          </div>
+        `;
+        
+        // Subject breakdown table
+        html += `<div style="background: white; border-radius: var(--radius-lg); padding: 24px; border: 2px solid var(--border-color); margin-bottom: 24px;">`;
+        html += `<h3 style="margin: 0 0 20px 0; color: var(--text-dark);">Subject Performance Breakdown</h3>`;
+        html += `
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; padding: 16px 8px; font-weight: 700; background: linear-gradient(135deg, #f8faff 0%, #f0f5fa 100%); border-bottom: 2px solid var(--border-color); border-radius: 4px 4px 0 0;">
+            <div>Subject</div>
+            <div style="text-align: center;">Score</div>
+            <div style="text-align: center;">Percentage</div>
+            <div style="text-align: center;">Status</div>
+          </div>
+        `;
+        
+        subjectScores.forEach(score => {
+          let statusClass = 'fair';
+          let statusText = '~ Fair';
+          
+          if (score.percentage >= 85) {
+            statusClass = 'excellent';
+            statusText = '✓ Excellent';
+          } else if (score.percentage >= 70) {
+            statusClass = 'good';
+            statusText = '✓ Good';
+          } else if (score.percentage >= 50) {
+            statusClass = 'fair';
+            statusText = '~ Fair';
+          } else {
+            statusClass = 'poor';
+            statusText = '✗ Needs Work';
+          }
+          
+          html += `
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 12px; padding: 16px 8px; border-bottom: 1px solid var(--border-color); align-items: center;">
+              <div style="font-weight: 600;">${score.name}</div>
+              <div style="text-align: center;">${score.correct}/${score.total}</div>
+              <div style="text-align: center; font-weight: 600;">${score.percentage}%</div>
+              <div style="text-align: center; padding: 4px 8px; border-radius: 4px; font-size: 0.9rem; font-weight: 600; background: ${statusClass === 'excellent' ? 'var(--success-bg)' : statusClass === 'good' ? 'rgba(122, 169, 212, 0.15)' : statusClass === 'fair' ? 'rgba(255, 184, 28, 0.15)' : 'var(--error-bg)'}; color: ${statusClass === 'excellent' ? 'var(--accent-color)' : statusClass === 'good' ? 'var(--secondary-color)' : statusClass === 'fair' ? '#d68910' : 'var(--error-color)'};">${statusText}</div>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+        
+        // Strengths and Weaknesses
+        if (strengths.length > 0 || weaknesses.length > 0) {
+          html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">`;
+          
+          if (strengths.length > 0) {
+            html += `
+              <div style="background: var(--success-bg); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid var(--accent-color);">
+                <h4 style="margin: 0 0 12px 0; color: var(--accent-color);">⭐ Your Strengths</h4>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+            `;
+            strengths.forEach(s => {
+              html += `<li style="padding: 8px 0; border-bottom: 1px solid rgba(43, 140, 94, 0.2);">${s.name}: <strong>${s.percentage}%</strong></li>`;
+            });
+            html += `</ul></div>`;
+          }
+          
+          if (weaknesses.length > 0) {
+            html += `
+              <div style="background: var(--error-bg); border-radius: var(--radius-lg); padding: 20px; border-left: 4px solid var(--error-color);">
+                <h4 style="margin: 0 0 12px 0; color: var(--error-color);">⚠️ Areas for Improvement</h4>
+                <ul style="list-style: none; padding: 0; margin: 0;">
+            `;
+            weaknesses.forEach(w => {
+              html += `<li style="padding: 8px 0; border-bottom: 1px solid rgba(194, 59, 59, 0.2);">${w.name}: <strong>${w.percentage}%</strong></li>`;
+            });
+            html += `</ul></div>`;
+          }
+          
+          html += `</div>`;
+        }
+        
+        // Summary statistics
+        html += `
+          <div style="background: white; border-radius: var(--radius-lg); padding: 24px; border: 2px solid var(--border-color);">
+            <h3 style="margin: 0 0 16px 0; color: var(--text-dark);">📈 Summary Statistics</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+              <div style="padding: 16px; background: linear-gradient(135deg, var(--success-bg) 0%, rgba(43, 140, 94, 0.1) 100%); border-radius: 8px; border-left: 4px solid var(--accent-color);">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px;">Average Score</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: var(--accent-color);">${avgPercentage.toFixed(1)}%</div>
+              </div>
+              <div style="padding: 16px; background: linear-gradient(135deg, hsla(210, 100%, 50%, 0.1) 0%, rgba(122, 169, 212, 0.05) 100%); border-radius: 8px; border-left: 4px solid var(--secondary-color);">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px;">Strength Areas</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: var(--secondary-color);">${strengths.length}</div>
+              </div>
+              <div style="padding: 16px; background: linear-gradient(135deg, var(--error-bg) 0%, rgba(194, 59, 59, 0.1) 100%); border-radius: 8px; border-left: 4px solid var(--error-color);">
+                <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 8px;">Areas to Improve</div>
+                <div style="font-size: 1.8rem; font-weight: 700; color: var(--error-color);">${weaknesses.length}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        html += `</div>`;
+        
+        questionCountDisplay.textContent = '';
+        quizContainer.innerHTML = html;
       }
 
       function submitAll() {
@@ -897,6 +1189,13 @@
       }
 
       function resetCurrentSubjectAnswers() {
+        // If on summary tab, just re-render and return
+        if (currentSubjectIndex === 14) {
+          renderCurrentSubject();
+          updateScorePanel();
+          return;
+        }
+        
         // Reset the current subject: clear answers and restore original questions
         const subj = subjects[currentSubjectIndex];
         
@@ -909,14 +1208,20 @@
         subj.questions = originalQuestions[currentSubjectIndex].map(q => ({
           text: q.text,
           options: [...q.options],
-          ans: q.ans
+          ans: q.ans,
+          subject: q.subject,
+          subjectIndex: q.subjectIndex
         }));
         
         // Reset the submitted flag to show original unsubmitted state
         submitted = false;
         
+        // Hide summary panel
+        document.getElementById('summaryPanel').style.display = 'none';
+        
         // Re-render with fresh questions and clear highlighting
         renderCurrentSubject();
+        renderSidebar();
         updateScorePanel();
       }
 
@@ -927,15 +1232,24 @@
         
         // Restore all subjects to original question order
         subjects.forEach((subj, idx) => {
+          // Skip summary tab
+          if (subj.isSummary) return;
+          
           subj.questions = originalQuestions[idx].map(q => ({
             text: q.text,
             options: [...q.options],
-            ans: q.ans
+            ans: q.ans,
+            subject: q.subject,
+            subjectIndex: q.subjectIndex
           }));
         });
         
+        // Hide summary panel
+        document.getElementById('summaryPanel').style.display = 'none';
+        
         // Re-render the current subject
         renderCurrentSubject();
+        renderSidebar();
         updateScorePanel();
       }
 
