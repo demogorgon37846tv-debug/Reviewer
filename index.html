@@ -896,14 +896,43 @@
       }
 
       function resetCurrentSubjectAnswers() {
-        // Clear only answers for the current subject
-        const subj = subjects[currentSubjectIndex];
-        subj.questions.forEach((q, qIdx) => {
-          delete userAnswers[`${currentSubjectIndex}_${qIdx}`];
-        });
-        
-        // Keep submitted state so score is still visible
-        renderCurrentSubject();
+        if (viewingSummary) {
+          // If viewing summary, reset all answers and go back to first subject
+          userAnswers = {};
+          submitted = false;
+          
+          // Restore all subjects to original question order
+          subjects.forEach((subj, idx) => {
+            subj.questions = originalQuestions[idx].map(q => ({
+              text: q.text,
+              options: [...q.options],
+              ans: q.ans
+            }));
+          });
+          
+          viewingSummary = false;
+          currentSubjectIndex = 0;
+          renderCurrentSubject();
+          renderSidebar();
+        } else {
+          // Reset the current subject: clear answers and restore original questions
+          const subj = subjects[currentSubjectIndex];
+          
+          // Clear answers for the current subject
+          subj.questions.forEach((q, qIdx) => {
+            delete userAnswers[`${currentSubjectIndex}_${qIdx}`];
+          });
+          
+          // Restore original questions for this subject
+          subj.questions = originalQuestions[currentSubjectIndex].map(q => ({
+            text: q.text,
+            options: [...q.options],
+            ans: q.ans
+          }));
+          
+          // Re-render with fresh questions
+          renderCurrentSubject();
+        }
         updateScorePanel();
       }
 
