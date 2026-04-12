@@ -302,13 +302,16 @@
       <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
       <h2 class="subject-title" id="currentSubjectTitle">Research Methodology</h2>
       <button class="shuffle-btn" id="shuffleBtn" title="Shuffle questions and options">🔀 Shuffle</button>
+      <button class="reset-btn" id="resetAnswersBtn" title="Reset all answers and questions">↻ Reset</button>
       <span class="progress-badge" id="questionCountDisplay"></span>
     </div>
     <div id="quizContainer" class="quiz-container"></div>
     <div class="submit-area">
       <button class="submit-btn" id="submitAllBtn">✅ SUBMIT ALL ANSWERS</button>
-      <button class="reset-btn" id="resetAnswersBtn">↻ Clear my answers</button>
       <div class="score-panel" id="scorePanel">Score: — / — (—%)</div>
+    </div>
+    <div class="submit-area">
+      <button class="reset-btn" id="clearCurrentAnswersBtn">🗑️ Clear My Answers</button>
     </div>
     <div class="footer-note">⚡ Select answers, then click SUBMIT to see results.</div>
   </div>
@@ -520,6 +523,15 @@
       let userAnswers = {}; // key: "subjIdx_qIdx" -> selected option index (0-based)
       let submitted = false;
       let totalQuestions = subjects.reduce((sum, s) => sum + s.questions.length, 0);
+      
+      // Store original questions for reset functionality
+      const originalQuestions = subjects.map(s => 
+        s.questions.map(q => ({
+          text: q.text,
+          options: [...q.options],
+          ans: q.ans
+        }))
+      );
 
       // DOM elements
       const sidebar = document.getElementById('sidebar');
@@ -574,11 +586,7 @@
         // Update the questions array
         subj.questions = shuffledQuestions;
         
-        // Reset user answers and submitted state
-        userAnswers = {};
-        submitted = false;
-        
-        // Re-render the quiz
+        // Re-render the quiz (keep answers and submitted state)
         renderCurrentSubject();
       }
 
@@ -676,9 +684,33 @@
         updateScorePanel();
       }
 
+      function resetCurrentSubjectAnswers() {
+        // Clear only answers for the current subject
+        const subj = subjects[currentSubjectIndex];
+        subj.questions.forEach((q, qIdx) => {
+          delete userAnswers[`${currentSubjectIndex}_${qIdx}`];
+        });
+        
+        // Keep submitted state so score is still visible
+        renderCurrentSubject();
+        updateScorePanel();
+      }
+
       function resetAllAnswers() {
+        // Reset answers and submitted state
         userAnswers = {};
         submitted = false;
+        
+        // Restore all subjects to original question order
+        subjects.forEach((subj, idx) => {
+          subj.questions = originalQuestions[idx].map(q => ({
+            text: q.text,
+            options: [...q.options],
+            ans: q.ans
+          }));
+        });
+        
+        // Re-render the current subject
         renderCurrentSubject();
         updateScorePanel();
       }
@@ -700,6 +732,7 @@
       submitBtn.addEventListener('click', submitAll);
       resetBtn.addEventListener('click', resetAllAnswers);
       shuffleBtn.addEventListener('click', shuffleCurrentSubject);
+      document.getElementById('clearCurrentAnswersBtn').addEventListener('click', resetCurrentSubjectAnswers);
 
       // Handle window resize to reset sidebar for desktop
       window.addEventListener('resize', () => {
