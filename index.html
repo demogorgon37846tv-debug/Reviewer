@@ -841,6 +841,41 @@ subjects[13].questions = comprehensiveQuestions;
       let viewingSummary = false;
       let userAnswers = {}; // key: "subjIdx_qIdx" -> selected option index (0-based)
       let submitted = false;
+      
+      // localStorage helper functions
+      function saveProgressToStorage() {
+        try {
+          localStorage.setItem('maedProgress_answers', JSON.stringify(userAnswers));
+          localStorage.setItem('maedProgress_submitted', JSON.stringify(submitted));
+          localStorage.setItem('maedProgress_currentSubject', JSON.stringify(currentSubjectIndex));
+        } catch (e) {
+          console.warn('localStorage save failed:', e);
+        }
+      }
+      
+      function loadProgressFromStorage() {
+        try {
+          const savedAnswers = localStorage.getItem('maedProgress_answers');
+          const savedSubmitted = localStorage.getItem('maedProgress_submitted');
+          const savedSubject = localStorage.getItem('maedProgress_currentSubject');
+          
+          if (savedAnswers) userAnswers = JSON.parse(savedAnswers);
+          if (savedSubmitted) submitted = JSON.parse(savedSubmitted);
+          if (savedSubject) currentSubjectIndex = JSON.parse(savedSubject);
+        } catch (e) {
+          console.warn('localStorage load failed:', e);
+        }
+      }
+      
+      function clearProgressFromStorage() {
+        try {
+          localStorage.removeItem('maedProgress_answers');
+          localStorage.removeItem('maedProgress_submitted');
+          localStorage.removeItem('maedProgress_currentSubject');
+        } catch (e) {
+          console.warn('localStorage clear failed:', e);
+        }
+      }
       // For comprehensive exam, total questions includes all questions; for individual subjects, use their count
       let totalQuestions = subjects.reduce((sum, s) => sum + s.questions.length, 0);
       
@@ -922,6 +957,7 @@ subjects[13].questions = comprehensiveQuestions;
           li.addEventListener('click', () => {
             currentSubjectIndex = idx;
             submitted = false;
+            saveProgressToStorage();
             renderCurrentSubject();
             renderSidebar();
             if (window.innerWidth < 720) sidebar.classList.add('collapsed');
@@ -983,6 +1019,7 @@ subjects[13].questions = comprehensiveQuestions;
             const qIdx = parseInt(radio.dataset.qidx);
             const opt = parseInt(radio.value);
             userAnswers[`${subjIdx}_${qIdx}`] = opt;
+            saveProgressToStorage();
           });
         });
 
@@ -1183,6 +1220,7 @@ subjects[13].questions = comprehensiveQuestions;
 
       function submitAll() {
         submitted = true;
+        saveProgressToStorage();
         // re-render current subject to show highlights
         renderCurrentSubject();
         updateScorePanel();
@@ -1216,6 +1254,9 @@ subjects[13].questions = comprehensiveQuestions;
         // Reset the submitted flag to show original unsubmitted state
         submitted = false;
         
+        // Save changes to storage
+        saveProgressToStorage();
+        
         // Hide summary panel
         document.getElementById('summaryPanel').style.display = 'none';
         
@@ -1229,6 +1270,9 @@ subjects[13].questions = comprehensiveQuestions;
         // Reset answers and submitted state
         userAnswers = {};
         submitted = false;
+        
+        // Clear from storage
+        clearProgressFromStorage();
         
         // Restore all subjects to original question order
         subjects.forEach((subj, idx) => {
@@ -1270,7 +1314,7 @@ subjects[13].questions = comprehensiveQuestions;
       submitBtn.addEventListener('click', submitAll);
       resetBtn.addEventListener('click', resetCurrentSubjectAnswers);
       shuffleBtn.addEventListener('click', shuffleCurrentSubject);
-      document.getElementById('clearCurrentAnswersBtn').addEventListener('click', resetCurrentSubjectAnswers);
+      document.getElementById('clearCurrentAnswersBtn').addEventListener('click', resetAllAnswers);
 
       // Handle window resize to reset sidebar for desktop
       window.addEventListener('resize', () => {
@@ -1280,6 +1324,7 @@ subjects[13].questions = comprehensiveQuestions;
 
       // Initialize
       function init() {
+        loadProgressFromStorage();
         renderSidebar();
         renderCurrentSubject();
         if (window.innerWidth <= 720) sidebar.classList.add('collapsed');
